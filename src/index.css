@@ -32,7 +32,7 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 230px minmax(0, 1fr) minmax(0, 1fr);
   height: 100%;
 }
 
@@ -52,12 +52,54 @@ body {
   margin: 0 0 14px 8px;
 }
 
+.progress {
+  margin: -8px 0 12px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The row carries the highlight so the checkbox sits inside it. */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 8px;
+  margin-bottom: 2px;
+  border-radius: 7px;
+}
+
+.nav-row:hover {
+  background: #1d2130;
+}
+
+.nav-row:hover .nav-item {
+  color: var(--text);
+}
+
+.nav-row-on {
+  background: var(--accent-dim);
+}
+
+.nav-row-on .nav-item {
+  color: var(--text);
+}
+
+.nav-check {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .nav-item {
   display: flex;
   gap: 9px;
-  width: 100%;
-  padding: 7px 9px;
-  margin-bottom: 2px;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px 7px 1px;
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -68,19 +110,31 @@ body {
   cursor: pointer;
 }
 
-.nav-item:hover {
-  background: #1d2130;
-  color: var(--text);
-}
-
-.nav-item-on {
-  background: var(--accent-dim);
-  color: var(--text);
+.nav-item-done {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+  opacity: 0.55;
 }
 
 .nav-num {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+}
+
+.reset-progress {
+  margin: 12px 0 0 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reset-progress:hover {
+  color: var(--danger);
 }
 
 /* Columns */
@@ -96,6 +150,10 @@ body {
 }
 
 .head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   padding: 14px 16px 10px;
 }
 
@@ -345,6 +403,12 @@ body {
 }
 
 .btn-run {
+  border-color: #2f5b3a;
+  background: #1a2a20;
+  color: var(--ok);
+}
+
+.btn-done {
   border-color: #2f5b3a;
   background: #1a2a20;
   color: var(--ok);

@@ -5,6 +5,7 @@ import ConsolePanel from './components/ConsolePanel'
 import { compile, type CompileResult } from './lib/compile'
 import { clearEntries } from './lib/logStore'
 import { DEFAULT_CSS, entries, type Entry } from './registry'
+import { useProgress } from './useProgress'
 
 type Tab = 'tsx' | 'css' | 'solution'
 type Buffer = { tsx: string; css: string }
@@ -34,6 +35,7 @@ export default function App() {
   const [runId, setRunId] = useState(0)
   const [result, setResult] = useState<CompileResult | null>(null)
   const [bottom, setBottom] = useState<'console' | 'compiled'>('console')
+  const progress = useProgress()
 
   const [buffers, setBuffers] = useState<Record<string, Buffer>>(() => {
     const initial: Record<string, Buffer> = {}
@@ -51,6 +53,7 @@ export default function App() {
     [activeId],
   )
   const buffer = buffers[active.id]
+  const activeDone = progress.isDone(active.id)
 
   const update = useCallback(
     (kind: 'tsx' | 'css', value: string) => {
@@ -89,18 +92,48 @@ export default function App() {
     <div className="layout">
       <aside className="sidebar">
         <h1 className="brand">Fetch Challenges</h1>
+        <p className="progress">
+          {progress.count} / {entries.length} done
+        </p>
         <nav>
-          {entries.map((entry) => (
-            <button
-              key={entry.id}
-              className={`nav-item${entry.id === active.id ? ' nav-item-on' : ''}`}
-              onClick={() => selectChallenge(entry.id)}
-            >
-              <span className="nav-num">{entry.id}</span>
-              {entry.title}
-            </button>
-          ))}
+          {entries.map((entry) => {
+            const done = progress.isDone(entry.id)
+            return (
+              <div
+                key={entry.id}
+                className={`nav-row${entry.id === active.id ? ' nav-row-on' : ''}`}
+              >
+                {/* The checkbox sits beside the nav button, not inside it —
+                    nesting one interactive control in another is invalid HTML
+                    and the two click targets end up fighting. */}
+                <input
+                  type="checkbox"
+                  className="nav-check"
+                  checked={done}
+                  onChange={() => progress.toggle(entry.id)}
+                  aria-label={`Mark ${entry.id}. ${entry.title} complete`}
+                />
+                <button
+                  className={`nav-item${done ? ' nav-item-done' : ''}`}
+                  onClick={() => selectChallenge(entry.id)}
+                >
+                  <span className="nav-num">{entry.id}</span>
+                  {entry.title}
+                </button>
+              </div>
+            )
+          })}
         </nav>
+        {progress.count > 0 && (
+          <button
+            className="reset-progress"
+            onClick={() => {
+              if (confirm('Clear progress on all challenges?')) progress.reset()
+            }}
+          >
+            Reset progress
+          </button>
+        )}
       </aside>
 
       <section className="col col-editor">
@@ -111,6 +144,12 @@ export default function App() {
             </h2>
             <code className="path">src/challenges/{active.file}</code>
           </div>
+          <button
+            className={`btn btn-sm${activeDone ? ' btn-done' : ''}`}
+            onClick={() => progress.toggle(active.id)}
+          >
+            {activeDone ? 'Completed ✓' : 'Mark complete'}
+          </button>
         </header>
 
         <details className="brief">

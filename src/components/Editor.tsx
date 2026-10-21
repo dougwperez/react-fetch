@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { EditorState, type Extension } from '@codemirror/state'
-import { EditorView, keymap } from '@codemirror/view'
+import { EditorState, Prec, type Extension } from '@codemirror/state'
+import { EditorView, keymap, scrollPastEnd } from '@codemirror/view'
+import { acceptCompletion } from '@codemirror/autocomplete'
+import { indentWithTab } from '@codemirror/commands'
 import { basicSetup } from 'codemirror'
-import { javascript } from '@codemirror/lang-javascript'
+import { javascript, scopeCompletionSource } from '@codemirror/lang-javascript'
 import { css } from '@codemirror/lang-css'
 import { oneDark } from '@codemirror/theme-one-dark'
 
@@ -25,20 +27,45 @@ export default function Editor({ docKey, value, language, readOnly, onChange, on
   useEffect(() => {
     if (!host.current) return
 
+    const lang = language === 'css' ? css() : javascript({ jsx: true, typescript: true })
+
     const extensions: Extension[] = [
       basicSetup,
-      language === 'css' ? css() : javascript({ jsx: true, typescript: true }),
+      lang,
+      // Completions otherwise only cover identifiers already in the file. This
+      // adds the runtime globals the challenges actually reach for — fetch,
+      // console, JSON, Promise — along with their members.
+      ...(language === 'css'
+        ? []
+        : [lang.language.data.of({ autocomplete: scopeCompletionSource(globalThis) })]),
       oneDark,
+      // Room to scroll past the last line, so the bottom of the file doesn't sit
+      // jammed against the edge of the pane while you're editing it.
+      scrollPastEnd(),
       EditorView.theme({
         '&': { height: '100%', fontSize: '13px' },
         '.cm-scroller': { fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' },
+        '.cm-content': { paddingBottom: '24px' },
       }),
+      // Prec.high keeps Tab ahead of anything basicSetup binds. Tab takes the
+      // open completion; with no completion showing it falls through to indent.
+      Prec.high(keymap.of([{ key: 'Tab', run: acceptCompletion }, indentWithTab])),
       keymap.of([
         {
           key: 'Mod-Enter',
           preventDefault: true,
           run: () => {
             handlers.current.onRun?.()
+            return true
+          },
+        },
+        {
+          // Binding Tab means it no longer moves focus, so keyboard users need
+          // a way out. This sits below the completion keymap, which takes
+          // Escape first while the popup is open.
+          key: 'Escape',
+          run: (view) => {
+            view.contentDOM.blur()
             return true
           },
         },
